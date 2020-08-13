@@ -9,6 +9,11 @@
  * @link   https://github.com/devi/Salt
  * 
  */
+
+namespace MikeRow\Salt\Salsa20;
+
+use \SplFixedArray;
+
 class Salsa20 {
 
 	public static $sigma = array(101,120,112,97,110,100,32,51,50,45,98,121,116,101,32,107);

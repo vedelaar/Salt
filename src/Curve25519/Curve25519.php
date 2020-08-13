@@ -10,6 +10,11 @@
  * @link https://github.com/devi/Salt
  * 
  */
+
+namespace MikeRow\Salt\Curve25519;
+
+use \SplFixedArray;
+
 class Curve25519 {
 
 	const KEYSIZE = 32;

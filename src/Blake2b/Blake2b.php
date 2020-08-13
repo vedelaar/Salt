@@ -7,6 +7,11 @@
  * 
  * @link https://github.com/devi/Salt
  */
+ 
+namespace MikeRow\Salt\Blake2b;
+ 
+use \SplFixedArray;
+ 
 class Blake2b {
 
 	const BLOCKBYTES = 128;

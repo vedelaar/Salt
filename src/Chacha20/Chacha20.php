@@ -5,6 +5,11 @@
  * Implementation derived from chacha-ref.c version 20080118
  * See for details: http://cr.yp.to/chacha/chacha-20080128.pdf
  */
+ 
+namespace MikeRow\Salt\Chacha20;
+ 
+use \SplFixedArray;
+
 class Chacha20 {
 
 	const KeySize = 32;

@@ -10,6 +10,11 @@
  * @link   https://github.com/devi/Salt
  *
  */
+ 
+namespace MikeRow\NanoSalt;
+ 
+use \SplFixedArray;
+ 
 class FieldElement extends SplFixedArray {
 
 	public function toString() {

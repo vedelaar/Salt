@@ -7,6 +7,11 @@
  *
  * @link   https://github.com/devi/Salt
  */
+
+namespace MikeRow\Salt\Poly1305;
+
+use \SplFixedArray;
+
 class Poly1305 {
 
 	const KeySize = 32;

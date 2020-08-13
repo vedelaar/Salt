@@ -1,11 +1,12 @@
-Salt
-====
+# NanoSalt
 
-[NaCl](http://nacl.cr.yp.to/) cryptography library for PHP.
+Nano [NaCl](http://nacl.cr.yp.to/) cryptography library for PHP
 
-Caution: **Use [libsodium-php](https://github.com/jedisct1/libsodium-php/) whenever possible.**
+This repository is a Composer-ready version of [devi/Salt](https://github.com/devi/Salt) and [jaimehgb/Salt](https://github.com/jaimehgb/Salt)
 
-Usage
-=====
+## Credits
 
-See example for details.
+Thanks a lot for the work and effort of
+
+- [devi/Salt](https://github.com/devi/Salt)
+- [jaimehgb/Salt](https://github.com/jaimehgb/Salt)

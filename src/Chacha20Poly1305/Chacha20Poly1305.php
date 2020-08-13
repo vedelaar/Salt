@@ -3,6 +3,13 @@
  * Chacha20Poly1305 AEAD
  *
  */
+ 
+namespace MikeRow\Salt\Chacha20Poly1305;
+ 
+use \SplFixedArray;
+use \MikeRow\NanoSalt\FieldElement\FieldElement;
+use \MikeRow\NanoSalt\Chacha20\Chacha20;
+
 class Chacha20Poly1305 {
 
 	protected $key;

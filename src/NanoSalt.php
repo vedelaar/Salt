@@ -8,7 +8,24 @@
  * @link   https://github.com/devi/Salt
  *
  */
-class Salt {
+ 
+namespace MikeRow\Salt;
+
+use \SplFixedArray;
+use MikeRow\Salt\Blake2b\Blake2b;
+use MikeRow\Salt\Chacha20\Chacha20;
+use MikeRow\Salt\Chacha20Poly1305\Chacha20Poly1305;
+use MikeRow\Salt\Curve25519\Curve25519;
+use MikeRow\Salt\Ed25519\Ed25519;
+use MikeRow\Salt\Ed25519\GeCached;
+use MikeRow\Salt\Ed25519\GeCompleted;
+use MikeRow\Salt\Ed25519\GeExtended;
+use MikeRow\Salt\Ed25519\GePrecomp;
+use MikeRow\Salt\Ed25519\GeProjective;
+use MikeRow\Salt\Poly1305\Poly1305;
+use MikeRow\Salt\Salsa20\Salsa20;
+
+class NanoSalt {
 
 	/* Salsa20, HSalsa20, XSalsa20 */
 	const salsa20_KEY    = 32;
@@ -88,7 +105,7 @@ class Salt {
 			$raw = openssl_random_pseudo_bytes($length);
 		}
 		if (!$raw || strlen($raw) !== $length) {
-			throw new SaltException('Unable to generate randombytes');
+			throw new NanoSaltException('Unable to generate randombytes');
 		}
 		return $raw;
 	}
@@ -248,12 +265,11 @@ class Salt {
 		} else {
 			$sk = Salt::decodeInput($seed);
 			if ($sk->count() !== Salt::sign_PUBLICKEY) {
-				throw new SaltException('crypto_sign_keypair: seed must be 32 byte');
+				throw new NanoSaltException('crypto_sign_keypair: seed must be 32 byte');
 			}
 		}
 
-		$azDigest = hash('sha512', $sk->toString(), true);
-		$az = FieldElement::fromString($azDigest);
+		$az = self::hash($sk->toString());
 		$az[0] &= 248;
 		$az[31] &= 63;
 		$az[31] |= 64;
@@ -269,6 +285,29 @@ class Salt {
 
 		return array($sk, $pk);
 	}
+	
+	public function crypto_sign_public_from_secret_key($sk) {
+		$sk = Salt::decodeInput($sk);
+		if($sk->count() == 64) {
+			// its the extended sk, get just the last 32 bytes
+			$sk->slice(32, 32);
+		} else if($sk->count() != 32) {
+			throw new NanoSaltException('crypto_sign_public_from_secret_key: secret key should be 32 or 64 bytes long');
+		}
+		
+		$az = self::hash($sk->toString());
+		$az[0] &= 248;
+		$az[31] &= 63;
+		$az[31] |= 64;
+
+		$ed = Ed25519::instance();
+		$A = new GeExtended();
+		$pk = new FieldElement(32);
+		$ed->geScalarmultBase($A, $az);
+		$ed->GeExtendedtoBytes($pk, $A);
+
+		return $pk;
+	}
 
 	/**
 	 * Signs a message using the signer's private key and returns
@@ -283,13 +322,12 @@ class Salt {
 		$sk = Salt::decodeInput($secretkey);
 
 		if ($sk->count() !== Salt::sign_PRIVATEKEY) {
-			throw new SaltException('crypto_sign: private key must be 64 byte');
+			throw new NanoSaltException('crypto_sign: private key must be 64 byte');
 		}
 
 		$pk = $sk->slice(32, 32);
 
-		$azDigest = hash('sha512', $sk->slice(0,32)->toString(), true);
-		$az = FieldElement::fromString($azDigest);
+		$az = self::hash($sk->slice(0,32)->toString());
 		$az[0] &= 248;
 		$az[31] &= 63;
 		$az[31] |= 64;
@@ -300,9 +338,8 @@ class Salt {
 		$sm->copy($m, $mlen, 64);
 		$sm->copy($az, 32, 32, 32);
 
-		$nonceDigest = hash('sha512', $sm->slice(32, $mlen+32)->toString(), true);
-		$nonce = FieldElement::fromString($nonceDigest);
-
+		$nonce = self::hash($sm->slice(32,$mlen+32)->toString());
+		
 		$sm->copy($pk, 32, 32);
 
 		$ed = Ed25519::instance();
@@ -311,8 +348,7 @@ class Salt {
 		$ed->geScalarmultBase($R, $nonce);
 		$ed->GeExtendedtoBytes($sm, $R);
 
-		$hramDigest = hash('sha512', $sm->toString(), true);
-		$hram = FieldElement::fromString($hramDigest);
+		$hram = self::hash($sm->toString());
 		$ed->scReduce($hram);
 
 		$rest = new FieldElement(32);
@@ -348,14 +384,14 @@ class Salt {
 		$d = 0;
 		for ($i = 0;$i < 32;++$i) $d |= $pk[$i];
 		if ($d === 0) return false;
-
-		$hs = hash_init('sha512');
-		hash_update($hs, $sm->slice(0, 32)->toString());
-		hash_update($hs, $pk->toString());
-		hash_update($hs, $sm->slice(64, $smlen-64)->toString());
-		$hDigest = hash_final($hs, true);
-
-		$h = FieldElement::fromString($hDigest);
+		
+		$b2b = new Blake2b();
+		$ctx = $b2b->init();
+		$b2b->update($ctx, $sm->slice(0, 32), 32);
+		$b2b->update($ctx, $pk, 32);
+		$b2b->update($ctx, $sm->slice(64, $smlen - 64), $sm->slice(64, $smlen - 64)->count());
+		$h = new FieldElement(64);
+		$b2b->finish($ctx, $h);
 		$ed->scReduce($h);
 
 		$R = new GeProjective();
@@ -368,6 +404,38 @@ class Salt {
 		}
 
 		return false;
+	}
+	
+	public function crypto_sign_open2($msg, $sm, $n, $pk) {
+		$sm = Salt::decodeInput($sm);
+		
+		if($n < 64) return false;
+		
+		$m = [];
+		for($i = 0; $i < count($msg); $i++) $m[$i] = $msg[$i];
+		
+		$ed = Ed25519::instance();
+		$A  = new GeExtended();
+
+		if (!$ed->geFromBytesNegateVartime($A, $pk)) {
+			return false;
+		}
+		
+		for ($i = 0; $i < $n; $i++) $m[$i] = $sm[$i];
+		for ($i = 0; $i < 32; $i++) $m[$i+32] = $pk[$i];
+		
+		$h = self::hash($m);
+		
+		$ed->scReduce($h);
+		
+		$R = new GeProjective();
+		$rcheck = new FieldElement(32);
+		$ed->geDoubleScalarmultVartime($R, $h, $A, $sm->slice(32));
+		$ed->geToBytes($rcheck, $R);
+		
+		if ($ed->cryptoVerify32($rcheck, $sm) === 0) {
+			return $sm->slice(64, $n-64);
+		}
 	}
 
 	/**
@@ -386,7 +454,7 @@ class Salt {
 		} else if ((array) $value === $value) {
 			return FieldElement::fromArray($value, false);
 		}
-		throw new SaltException('Unexpected input');
+		throw new NanoSaltException('Unexpected input');
 	}
 
 	/* High level API */
@@ -401,7 +469,7 @@ class Salt {
 	public static function onetimeauth($msg, $key) {
 		$k = Salt::decodeInput($key);
 		if ($k->count() !== Salt::onetimeauth_KEY) {
-			throw new SaltException('Invalid key size');
+			throw new NanoSaltException('Invalid key size');
 		}
 		$in = Salt::decodeInput($msg);
 		return Salt::instance()->crypto_onetimeauth($in, $in->count(), $k);
@@ -417,10 +485,10 @@ class Salt {
 		$m = Salt::decodeInput($msg);
 		$k = Salt::decodeInput($secretkey);
 		if ($t->count() !== Salt::onetimeauth_OUTPUT) {
-			throw new SaltException('Invalid mac size');
+			throw new NanoSaltException('Invalid mac size');
 		}
 		if ($k->count() !== Salt::onetimeauth_KEY) {
-			throw new SaltException('Invalid secret key size');
+			throw new NanoSaltException('Invalid secret key size');
 		}
 		return Salt::instance()->crypto_onetimeauth_verify($t, $m, $m->count(), $k);
 	}
@@ -438,10 +506,10 @@ class Salt {
 		$n = Salt::decodeInput($nonce);
 
 		if ($k->count() !== Salt::secretbox_KEY) {
-			throw new SaltException('Invalid key size');
+			throw new NanoSaltException('Invalid key size');
 		}
 		if ($n->count() !== Salt::secretbox_NONCE) {
-			throw new SaltException('Invalid nonce size');
+			throw new NanoSaltException('Invalid nonce size');
 		}
 
 		$in = new FieldElement(32);
@@ -469,10 +537,10 @@ class Salt {
 		$n = Salt::decodeInput($nonce);
 
 		if ($k->count() !== Salt::secretbox_KEY) {
-			throw new SaltException('Invalid key size');
+			throw new NanoSaltException('Invalid key size');
 		}
 		if ($n->count() !== Salt::secretbox_NONCE) {
-			throw new SaltException('Invalid nonce size');
+			throw new NanoSaltException('Invalid nonce size');
 		}
 
 		$in = Salt::decodeInput($ciphertext);
@@ -491,10 +559,10 @@ class Salt {
 		$sk = Salt::decodeInput($secretkey);
 		$pk = Salt::decodeInput($publickey);
 		if ($sk->count() !== Salt::scalarmult_INPUT) {
-			throw new SaltException('Invalid secret key size');
+			throw new NanoSaltException('Invalid secret key size');
 		}
 		if ($pk->count() !== Salt::scalarmult_SCALAR) {
-			throw new SaltException('Invalid public key size');
+			throw new NanoSaltException('Invalid public key size');
 		}
 		return Salt::instance()->crypto_scalarmult($sk, $pk);
 	}
@@ -508,7 +576,7 @@ class Salt {
 	public static function scalarmult_base($secretkey) {
 		$sk = Salt::decodeInput($secretkey);
 		if ($sk->count() !== Salt::scalarmult_INPUT) {
-			throw new SaltException('Invalid secret key size');
+			throw new NanoSaltException('Invalid secret key size');
 		}
 		return Salt::instance()->crypto_scalarmult_base($sk);
 	}
@@ -529,13 +597,13 @@ class Salt {
 		$pk = Salt::decodeInput($publickey);
 		$n = Salt::decodeInput($nonce);
 		if ($sk->count() !== Salt::box_PRIVATEKEY) {
-			throw new SaltException('Invalid secret key size');
+			throw new NanoSaltException('Invalid secret key size');
 		}
 		if ($pk->count() !== Salt::box_PUBLICKEY) {
-			throw new SaltException('Invalid public key size');
+			throw new NanoSaltException('Invalid public key size');
 		}
 		if ($n->count() !== Salt::box_NONCE) {
-			throw new SaltException('Invalid nonce size');
+			throw new NanoSaltException('Invalid nonce size');
 		}
 		return Salt::instance()->crypto_box($in, $in->count(), $n, $pk, $sk);
 	}
@@ -556,13 +624,13 @@ class Salt {
 		$pk = Salt::decodeInput($publickey);
 		$n = Salt::decodeInput($nonce);
 		if ($sk->count() !== Salt::box_PRIVATEKEY) {
-			throw new SaltException('Invalid secret key size');
+			throw new NanoSaltException('Invalid secret key size');
 		}
 		if ($pk->count() !== Salt::box_PUBLICKEY) {
-			throw new SaltException('Invalid public key size');
+			throw new NanoSaltException('Invalid public key size');
 		}
 		if ($n->count() !== Salt::box_NONCE) {
-			throw new SaltException('Invalid nonce size');
+			throw new NanoSaltException('Invalid nonce size');
 		}
 		return Salt::instance()->crypto_box_open($c, $c->count(), $n, $pk, $sk);
 	}
@@ -633,10 +701,10 @@ class Salt {
 		$n = Salt::decodeInput($nonce);
 		$k = Salt::decodeInput($secretkey);
 		if ($k->count() !== Chacha20::KeySize) {
-			throw new SaltException('Invalid key size');
+			throw new NanoSaltException('Invalid key size');
 		}
 		if ($n->count() !== Chacha20::NonceSize) {
-			throw new SaltException('Invalid nonce size');
+			throw new NanoSaltException('Invalid nonce size');
 		}
 
 		$aead = new Chacha20Poly1305($k);
@@ -658,10 +726,10 @@ class Salt {
 		$n = Salt::decodeInput($nonce);
 		$k = Salt::decodeInput($secretkey);
 		if ($k->count() !== Chacha20::KeySize) {
-			throw new SaltException('Invalid key size');
+			throw new NanoSaltException('Invalid key size');
 		}
 		if ($n->count() !== Chacha20::NonceSize) {
-			throw new SaltException('Invalid nonce size');
+			throw new NanoSaltException('Invalid nonce size');
 		}
 
 		$aead = new Chacha20Poly1305($k);
@@ -682,7 +750,7 @@ class Salt {
 		if ($key !== null) {
 			$k = Salt::decodeInput($key);
 			if ($k->count() > $b2b::KEYBYTES) {
-				throw new SaltException('Invalid key size');
+				throw new NanoSaltException('Invalid key size');
 			}
 		}
 

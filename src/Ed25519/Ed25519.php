@@ -10,59 +10,10 @@
  * @link   https://github.com/devi/Salt
  * 
  */
-class GeProjective {
 
-	public $X;
-	public $Y;
-	public $Z;
+namespace MikeRow\Salt\Ed25519;
 
-	function __construct(){
-		$this->X = new SplFixedArray(10);
-		$this->Y = new SplFixedArray(10);
-		$this->Z = new SplFixedArray(10);
-	}
-}
-
-class GeExtended extends GeProjective {
-
-	public $T;
-
-	function __construct(){
-		parent::__construct();
-		$this->T = new SplFixedArray(10);
-	}
-}
-
-class GeCompleted extends GeExtended {}
-
-class GePrecomp {
-
-	public $yplusx;
-	public $yminusx;
-	public $xy2d;
-
-	function __construct($x = null, $y = null, $z = null) {
-		$this->yplusx = $x ? SplFixedArray::fromArray($x) : new SplFixedArray(10);
-		$this->yminusx = $y ? SplFixedArray::fromArray($y) :new SplFixedArray(10);
-		$this->xy2d = $z ? SplFixedArray::fromArray($z) :new SplFixedArray(10);
-	}
-}
-
-class GeCached {
-
-	public $YplusX;
-	public $YminusX;
-	public $Z;
-	public $T2d;
-
-	function __construct() {
-		$this->YplusX = new SplFixedArray(10);
-		$this->YminusX = new SplFixedArray(10);
-		$this->Z = new SplFixedArray(10);
-		$this->T2d = new SplFixedArray(10);
-	}
-
-}
+use \SplFixedArray;
 
 class Ed25519 {
 

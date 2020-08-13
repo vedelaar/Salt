@@ -1,0 +1,28 @@
+{
+	"name" : "mikerow/nanosalt",
+	"type" : "library",
+	"description" : "Nano NaCl cryptography library for PHP",
+	"keywords" : [
+		"Nano",
+		"Salt",
+		"PHP",
+		"library",
+		"cryptography"
+	],
+	"authors" : [{
+			"name" : "devi",
+			"homepage": "https://github.com/devi/Salt",
+			"role" : "Developer"
+		},
+		{
+			"name" : "jaimehgb",
+			"homepage": "https://github.com/jaimehgb/RaiBlocksPHP",
+			"role" : "Developer"
+		}
+	],
+	"autoload" : {
+		"psr-4" : {
+			"MikeRow\\NanoSalt\\" : "src/"
+		}
+	}
+}
