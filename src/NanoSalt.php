@@ -150,7 +150,7 @@ class NanoSalt {
 
 	public function crypto_onetimeauth_verify($mac, $in, $length, $key) {
 		$correct = $this->crypto_onetimeauth($in, $length, $key);
-		return Salt::equal($correct, $mac->slice(0, 16));
+		return NanoSalt::equal($correct, $mac->slice(0, 16));
 	}
 
 	public function crypto_stream_salsa20($length, $nonce, $key) {
@@ -221,7 +221,7 @@ class NanoSalt {
 	}
 
 	public function crypto_box_keypair() {
-		$sk = FieldElement::fromString(Salt::randombytes());
+		$sk = FieldElement::fromString(NanoSalt::randombytes());
 		$pk = $this->crypto_scalarmult_base($sk);
 		return array($sk, $pk);
 	}
@@ -261,10 +261,10 @@ class NanoSalt {
 	 */
 	public function crypto_sign_keypair($seed = null) {
 		if ($seed === null) {
-			$sk = FieldElement::fromString(Salt::randombytes());
+			$sk = FieldElement::fromString(NanoSalt::randombytes());
 		} else {
-			$sk = Salt::decodeInput($seed);
-			if ($sk->count() !== Salt::sign_PUBLICKEY) {
+			$sk = NanoSalt::decodeInput($seed);
+			if ($sk->count() !== NanoSalt::sign_PUBLICKEY) {
 				throw new NanoSaltException('crypto_sign_keypair: seed must be 32 byte');
 			}
 		}
@@ -287,7 +287,7 @@ class NanoSalt {
 	}
 	
 	public function crypto_sign_public_from_secret_key($sk) {
-		$sk = Salt::decodeInput($sk);
+		$sk = NanoSalt::decodeInput($sk);
 		if($sk->count() == 64) {
 			// its the extended sk, get just the last 32 bytes
 			$sk->slice(32, 32);
@@ -319,9 +319,9 @@ class NanoSalt {
 	 * @return FieldElement  signed message
 	 */
 	public function crypto_sign($msg, $mlen, $secretkey) {
-		$sk = Salt::decodeInput($secretkey);
+		$sk = NanoSalt::decodeInput($secretkey);
 
-		if ($sk->count() !== Salt::sign_PRIVATEKEY) {
+		if ($sk->count() !== NanoSalt::sign_PRIVATEKEY) {
 			throw new NanoSaltException('crypto_sign: private key must be 64 byte');
 		}
 
@@ -332,7 +332,7 @@ class NanoSalt {
 		$az[31] &= 63;
 		$az[31] |= 64;
 
-		$m = Salt::decodeInput($msg);
+		$m = NanoSalt::decodeInput($msg);
 
 		$sm = new FieldElement($mlen + 64);
 		$sm->copy($m, $mlen, 64);
@@ -367,8 +367,8 @@ class NanoSalt {
 	 * @return mixed
 	 */
 	public function crypto_sign_open($signedmsg, $smlen, $publickey) {
-		$sm = Salt::decodeInput($signedmsg);
-		$pk = Salt::decodeInput($publickey);
+		$sm = NanoSalt::decodeInput($signedmsg);
+		$pk = NanoSalt::decodeInput($publickey);
 
 		if ($smlen < 64) return false;
 
@@ -407,7 +407,7 @@ class NanoSalt {
 	}
 	
 	public function crypto_sign_open2($msg, $sm, $n, $pk) {
-		$sm = Salt::decodeInput($sm);
+		$sm = NanoSalt::decodeInput($sm);
 		
 		if($n < 64) return false;
 		
@@ -467,12 +467,12 @@ class NanoSalt {
 	 * @return FieldElement  16 bytes authenticator
 	 */
 	public static function onetimeauth($msg, $key) {
-		$k = Salt::decodeInput($key);
-		if ($k->count() !== Salt::onetimeauth_KEY) {
+		$k = NanoSalt::decodeInput($key);
+		if ($k->count() !== NanoSalt::onetimeauth_KEY) {
 			throw new NanoSaltException('Invalid key size');
 		}
-		$in = Salt::decodeInput($msg);
-		return Salt::instance()->crypto_onetimeauth($in, $in->count(), $k);
+		$in = NanoSalt::decodeInput($msg);
+		return NanoSalt::instance()->crypto_onetimeauth($in, $in->count(), $k);
 	}
 
 	/**
@@ -481,16 +481,16 @@ class NanoSalt {
 	 * @return bool
 	 */
 	public static function onetimeauth_verify($mac, $msg, $secretkey) {
-		$t = Salt::decodeInput($mac);
-		$m = Salt::decodeInput($msg);
-		$k = Salt::decodeInput($secretkey);
-		if ($t->count() !== Salt::onetimeauth_OUTPUT) {
+		$t = NanoSalt::decodeInput($mac);
+		$m = NanoSalt::decodeInput($msg);
+		$k = NanoSalt::decodeInput($secretkey);
+		if ($t->count() !== NanoSalt::onetimeauth_OUTPUT) {
 			throw new NanoSaltException('Invalid mac size');
 		}
-		if ($k->count() !== Salt::onetimeauth_KEY) {
+		if ($k->count() !== NanoSalt::onetimeauth_KEY) {
 			throw new NanoSaltException('Invalid secret key size');
 		}
-		return Salt::instance()->crypto_onetimeauth_verify($t, $m, $m->count(), $k);
+		return NanoSalt::instance()->crypto_onetimeauth_verify($t, $m, $m->count(), $k);
 	}
 
 	/**
@@ -502,26 +502,26 @@ class NanoSalt {
 	 * @return FieldElement
 	 */
 	public static function secretbox($msg, $nonce, $key) {
-		$k = Salt::decodeInput($key);
-		$n = Salt::decodeInput($nonce);
+		$k = NanoSalt::decodeInput($key);
+		$n = NanoSalt::decodeInput($nonce);
 
-		if ($k->count() !== Salt::secretbox_KEY) {
+		if ($k->count() !== NanoSalt::secretbox_KEY) {
 			throw new NanoSaltException('Invalid key size');
 		}
-		if ($n->count() !== Salt::secretbox_NONCE) {
+		if ($n->count() !== NanoSalt::secretbox_NONCE) {
 			throw new NanoSaltException('Invalid nonce size');
 		}
 
 		$in = new FieldElement(32);
 		for ($i = 32; $i--;) $in[$i] = 0; // zero padding 32 byte
 
-		$data = Salt::decodeInput($msg);
+		$data = NanoSalt::decodeInput($msg);
 
 		$in->setSize(32 + $data->count());
 
 		$in->copy($data, $data->count(), 32);
 
-		return Salt::instance()->crypto_secretbox($in, $in->count(), $n, $k);
+		return NanoSalt::instance()->crypto_secretbox($in, $in->count(), $n, $k);
 	}
 
 	/**
@@ -533,19 +533,19 @@ class NanoSalt {
 	 * @return FieldElement
 	 */
 	public static function secretbox_open($ciphertext, $nonce, $key) {
-		$k = Salt::decodeInput($key);
-		$n = Salt::decodeInput($nonce);
+		$k = NanoSalt::decodeInput($key);
+		$n = NanoSalt::decodeInput($nonce);
 
-		if ($k->count() !== Salt::secretbox_KEY) {
+		if ($k->count() !== NanoSalt::secretbox_KEY) {
 			throw new NanoSaltException('Invalid key size');
 		}
-		if ($n->count() !== Salt::secretbox_NONCE) {
+		if ($n->count() !== NanoSalt::secretbox_NONCE) {
 			throw new NanoSaltException('Invalid nonce size');
 		}
 
-		$in = Salt::decodeInput($ciphertext);
+		$in = NanoSalt::decodeInput($ciphertext);
 
-		return Salt::instance()->crypto_secretbox_open($in, $in->count(), $n, $k);
+		return NanoSalt::instance()->crypto_secretbox_open($in, $in->count(), $n, $k);
 	}
 
 	/**
@@ -556,15 +556,15 @@ class NanoSalt {
 	 * @return FieldElement
 	 */
 	public static function scalarmult($secretkey, $publickey) {
-		$sk = Salt::decodeInput($secretkey);
-		$pk = Salt::decodeInput($publickey);
-		if ($sk->count() !== Salt::scalarmult_INPUT) {
+		$sk = NanoSalt::decodeInput($secretkey);
+		$pk = NanoSalt::decodeInput($publickey);
+		if ($sk->count() !== NanoSalt::scalarmult_INPUT) {
 			throw new NanoSaltException('Invalid secret key size');
 		}
-		if ($pk->count() !== Salt::scalarmult_SCALAR) {
+		if ($pk->count() !== NanoSalt::scalarmult_SCALAR) {
 			throw new NanoSaltException('Invalid public key size');
 		}
-		return Salt::instance()->crypto_scalarmult($sk, $pk);
+		return NanoSalt::instance()->crypto_scalarmult($sk, $pk);
 	}
 
 	/**
@@ -574,11 +574,11 @@ class NanoSalt {
 	 * @return FieldElement
 	 */
 	public static function scalarmult_base($secretkey) {
-		$sk = Salt::decodeInput($secretkey);
-		if ($sk->count() !== Salt::scalarmult_INPUT) {
+		$sk = NanoSalt::decodeInput($secretkey);
+		if ($sk->count() !== NanoSalt::scalarmult_INPUT) {
 			throw new NanoSaltException('Invalid secret key size');
 		}
-		return Salt::instance()->crypto_scalarmult_base($sk);
+		return NanoSalt::instance()->crypto_scalarmult_base($sk);
 	}
 
 	/**
@@ -592,20 +592,20 @@ class NanoSalt {
 	 * @return FieldElement chipertext
 	 */
 	public static function box($msg, $secretkey, $publickey, $nonce) {
-		$in = Salt::decodeInput($msg);
-		$sk = Salt::decodeInput($secretkey);
-		$pk = Salt::decodeInput($publickey);
-		$n = Salt::decodeInput($nonce);
-		if ($sk->count() !== Salt::box_PRIVATEKEY) {
+		$in = NanoSalt::decodeInput($msg);
+		$sk = NanoSalt::decodeInput($secretkey);
+		$pk = NanoSalt::decodeInput($publickey);
+		$n = NanoSalt::decodeInput($nonce);
+		if ($sk->count() !== NanoSalt::box_PRIVATEKEY) {
 			throw new NanoSaltException('Invalid secret key size');
 		}
-		if ($pk->count() !== Salt::box_PUBLICKEY) {
+		if ($pk->count() !== NanoSalt::box_PUBLICKEY) {
 			throw new NanoSaltException('Invalid public key size');
 		}
-		if ($n->count() !== Salt::box_NONCE) {
+		if ($n->count() !== NanoSalt::box_NONCE) {
 			throw new NanoSaltException('Invalid nonce size');
 		}
-		return Salt::instance()->crypto_box($in, $in->count(), $n, $pk, $sk);
+		return NanoSalt::instance()->crypto_box($in, $in->count(), $n, $pk, $sk);
 	}
 
 	/**
@@ -619,20 +619,20 @@ class NanoSalt {
 	 * @return FieldElement the message
 	 */
 	public static function box_open($ciphertext, $secretkey, $publickey, $nonce) {
-		$c = Salt::decodeInput($ciphertext);
-		$sk = Salt::decodeInput($secretkey);
-		$pk = Salt::decodeInput($publickey);
-		$n = Salt::decodeInput($nonce);
-		if ($sk->count() !== Salt::box_PRIVATEKEY) {
+		$c = NanoSalt::decodeInput($ciphertext);
+		$sk = NanoSalt::decodeInput($secretkey);
+		$pk = NanoSalt::decodeInput($publickey);
+		$n = NanoSalt::decodeInput($nonce);
+		if ($sk->count() !== NanoSalt::box_PRIVATEKEY) {
 			throw new NanoSaltException('Invalid secret key size');
 		}
-		if ($pk->count() !== Salt::box_PUBLICKEY) {
+		if ($pk->count() !== NanoSalt::box_PUBLICKEY) {
 			throw new NanoSaltException('Invalid public key size');
 		}
-		if ($n->count() !== Salt::box_NONCE) {
+		if ($n->count() !== NanoSalt::box_NONCE) {
 			throw new NanoSaltException('Invalid nonce size');
 		}
-		return Salt::instance()->crypto_box_open($c, $c->count(), $n, $pk, $sk);
+		return NanoSalt::instance()->crypto_box_open($c, $c->count(), $n, $pk, $sk);
 	}
 
 	/**
@@ -641,7 +641,7 @@ class NanoSalt {
 	 * @return array  secret key, public key
 	 */
 	public static function box_keypair() {
-		return Salt::instance()->crypto_box_keypair();
+		return NanoSalt::instance()->crypto_box_keypair();
 	}
 
 	/**
@@ -652,8 +652,8 @@ class NanoSalt {
 	 * @return FieldElement 64 byte signature 
 	 */
 	public static function sign($msg, $secretkey) {
-		$m = Salt::decodeInput($msg);
-		$sm = Salt::instance()->crypto_sign($m, $m->count(), $secretkey);
+		$m = NanoSalt::decodeInput($msg);
+		$sm = NanoSalt::instance()->crypto_sign($m, $m->count(), $secretkey);
 		return $sm->slice(0, 64);
 	}
 
@@ -667,12 +667,12 @@ class NanoSalt {
 	 * @return bool
 	 */
 	public static function sign_verify($msg, $signature, $publickey) {
-		$sm = Salt::decodeInput($signature);
-		$m = Salt::decodeInput($msg);
+		$sm = NanoSalt::decodeInput($signature);
+		$m = NanoSalt::decodeInput($msg);
 		$sm->setSize($sm->count() + $m->count());
 		$sm->copy($m, $m->count, 64);
-		$pk = Salt::decodeInput($publickey);
-		$ret = Salt::instance()->crypto_sign_open($sm, $sm->count(), $pk);
+		$pk = NanoSalt::decodeInput($publickey);
+		$ret = NanoSalt::instance()->crypto_sign_open($sm, $sm->count(), $pk);
 		return ($ret !== false);
 	}
 
@@ -683,7 +683,7 @@ class NanoSalt {
 	 * @return array   secret key, public key
 	 */
 	public static function sign_keypair($seed = null) {
-		return Salt::instance()->crypto_sign_keypair($seed);
+		return NanoSalt::instance()->crypto_sign_keypair($seed);
 	}
 
 	/**
@@ -696,10 +696,10 @@ class NanoSalt {
 	 * @return FieldElement ciphertext
 	 */
 	public static function encrypt($input, $data, $nonce, $secretkey) {
-		$in = Salt::decodeInput($input);
-		$ad = Salt::decodeInput($data);
-		$n = Salt::decodeInput($nonce);
-		$k = Salt::decodeInput($secretkey);
+		$in = NanoSalt::decodeInput($input);
+		$ad = NanoSalt::decodeInput($data);
+		$n = NanoSalt::decodeInput($nonce);
+		$k = NanoSalt::decodeInput($secretkey);
 		if ($k->count() !== Chacha20::KeySize) {
 			throw new NanoSaltException('Invalid key size');
 		}
@@ -721,10 +721,10 @@ class NanoSalt {
 	 * @return FieldElement the message
 	 */
 	public static function decrypt($ciphertext, $data, $nonce, $secretkey) {
-		$in = Salt::decodeInput($ciphertext);
-		$ad = Salt::decodeInput($data);
-		$n = Salt::decodeInput($nonce);
-		$k = Salt::decodeInput($secretkey);
+		$in = NanoSalt::decodeInput($ciphertext);
+		$ad = NanoSalt::decodeInput($data);
+		$n = NanoSalt::decodeInput($nonce);
+		$k = NanoSalt::decodeInput($secretkey);
 		if ($k->count() !== Chacha20::KeySize) {
 			throw new NanoSaltException('Invalid key size');
 		}
@@ -748,13 +748,13 @@ class NanoSalt {
 
 		$k = $key;
 		if ($key !== null) {
-			$k = Salt::decodeInput($key);
+			$k = NanoSalt::decodeInput($key);
 			if ($k->count() > $b2b::KEYBYTES) {
 				throw new NanoSaltException('Invalid key size');
 			}
 		}
 
-		$in = Salt::decodeInput($str);
+		$in = NanoSalt::decodeInput($str);
 
 		$ctx = $b2b->init($k);
 		$b2b->update($ctx, $in, $in->count());
