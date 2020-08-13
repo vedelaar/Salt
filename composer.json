@@ -1,7 +1,7 @@
 {
-	"name" : "mikerow/nanosalt",
+	"name" : "mikerow/salt",
 	"type" : "library",
-	"description" : "Nano NaCl cryptography library for PHP",
+	"description" : "NaCl cryptography library for PHP",
 	"keywords" : [
 		"Nano",
 		"Salt",
@@ -22,7 +22,7 @@
 	],
 	"autoload" : {
 		"psr-4" : {
-			"MikeRow\\NanoSalt\\" : "src/"
+			"MikeRow\\Salt\\" : "src/"
 		}
 	}
 }
