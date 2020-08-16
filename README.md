@@ -1,4 +1,4 @@
-# NanoSalt
+# Salt
 
 [NaCl](http://nacl.cr.yp.to/) cryptography library for PHP
 
