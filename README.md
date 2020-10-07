@@ -4,6 +4,8 @@
 
 This repository is a PSR-4 Composer-ready version of [devi/Salt](https://github.com/devi/Salt) and [jaimehgb/Salt](https://github.com/jaimehgb/Salt)
 
+---
+
 ## Credits
 
 Thanks a lot for the work and effort of
