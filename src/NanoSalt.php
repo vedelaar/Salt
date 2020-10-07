@@ -78,7 +78,7 @@ class NanoSalt
 
 	public static function instance() {
 		if (!isset(static::$instance)) {
-			static::$instance = new Salt();
+			static::$instance = new NanoSalt();
 		}
 		return static::$instance;
 	}
