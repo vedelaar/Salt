@@ -11,7 +11,7 @@
  *
  */
  
-namespace MikeRow\NanoSalt;
+namespace MikeRow\Salt;
  
 use \SplFixedArray;
  
