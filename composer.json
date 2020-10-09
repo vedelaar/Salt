@@ -3,10 +3,11 @@
 	"type" : "library",
 	"description" : "NaCl cryptography library for PHP",
 	"keywords" : [
-		"Nano",
-		"Salt",
-		"PHP",
+		"nano",
+		"salt",
+		"php",
 		"library",
+		"nacl",
 		"cryptography"
 	],
 	"authors" : [{
