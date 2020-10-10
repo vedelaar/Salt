@@ -17,11 +17,11 @@ This repository is a PSR-4 Composer-ready version of [devi/Salt](https://github.
 - Salsa20
 - Salt
 
-  cryptography library
+  cryptography methods
   
 - NanoSalt
 
-  cryptography library for Nano currency (different version of signing method)
+  cryptography methods for Nano currency (different version of signing)
   
 ---
 
