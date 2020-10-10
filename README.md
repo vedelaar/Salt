@@ -21,7 +21,7 @@ This repository is a PSR-4 Composer-ready version of [devi/Salt](https://github.
   
 - NanoSalt
 
-  cryptography methods for Nano currency (different version of signing)
+  cryptography methods for Banano/Nano currencies (different version of signing)
   
 ---
 
