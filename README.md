@@ -15,7 +15,6 @@ This repository is a PSR-4 Composer-ready version of [devi/Salt](https://github.
 - [Ed25519](https://github.com/MikeRow/Salt/tree/master/src/Ed25519)
 - [Poly1305](https://github.com/MikeRow/Salt/tree/master/src/Poly1305)
 - [Salsa20](https://github.com/MikeRow/Salt/tree/master/src/Salsa20)
-- [FieldElement](https://github.com/MikeRow/Salt/blob/master/src/FieldElement.php)
 - [Salt](https://github.com/MikeRow/Salt/blob/master/src/Salt.php)
 
   cryptography methods
