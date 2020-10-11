@@ -6,6 +6,14 @@ This repository is a PSR-4 Composer-ready version of [devi/Salt](https://github.
 
 ---
 
+## Install
+
+<pre>
+composer require mikerow/salt
+</pre>
+
+---
+
 ## Features
 
 - [Blake2b](https://github.com/MikeRow/Salt/tree/master/src/Blake2b)
