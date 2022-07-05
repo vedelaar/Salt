@@ -25,7 +25,7 @@ use MikeRow\Salt\Ed25519\GeProjective;
 use MikeRow\Salt\Poly1305\Poly1305;
 use MikeRow\Salt\Salsa20\Salsa20;
 
-class NanoSaltException extends Exception {}
+class NanoSaltException extends \Exception {}
 
 class NanoSalt
 {
